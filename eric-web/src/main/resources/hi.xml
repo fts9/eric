@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<high_priority>
+	<hi>
+		<pattern>\bwhat ((course|courses)|(subject|subjects))\b</pattern>
+		<pattern>\bwhat can i do\b</pattern>
+		<response>The School of Computing offers courses in computer science, creative computing, information systems, and smart systems</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\bcomputer science\b</pattern>
+		<response>Computer Science is concerned with the application of computing to a wide range of problems. Computer systems are now vital to business, government, science and society, and there is much demand for graduates with the professional understanding and practical skills to harness software and hardware technologies to solve real-world problems and to develop the systems of the future. If you want to find out more about this course, you should talk to Dr Charles Day or Dr Kyriacou</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\bcreative computing\b</pattern>
+		<response>This is a course for students with an interest in the creative side of computing, with topics such as computer animation, multimedia, web design, virtual worlds and games programming. If you want to find out more, talk to David Collins</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\binformation systems\b</pattern>
+		<response>This course focuses on the software, people, data, procedures and hardware that work together to provide the information systems essential to running an organisation</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\bsmart systems\b</pattern>
+		<response>This is a course for students with an interest in computational intelligence, with topics such as adaptive and evolutionary algorithms, neural networks, robotics, the similarities and differences between natural and synthetic intelligent systems and research and development in this exciting area. To find out more, you should talk to Dr Charles Day or Dr Alistair Channon</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\bwhere am i\b</pattern>
+		<response>You are in F6 on this map;;>>showmap</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\bwhere\b</pattern>
+		<pattern>\bunion\b</pattern>
+		<response>The students' union is at H4 on this map;;>>showmap</response>
+	</hi>
+	<hi patterns_are_strict="1">
+		<pattern>\bwhere\b</pattern>
+		<pattern>\bcomputing|math(ematics|s)\b</pattern>
+		<response>The Collin Reeves building is at F6 on this map;;>>showmap</response>
+	</hi>
+	<hi>
+		<pattern>\bmap\b</pattern>
+		<response>>>showmap</response>
+	</hi>
+</high_priority>

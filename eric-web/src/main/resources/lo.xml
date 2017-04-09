@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<low_priority>
+	<lo>
+		<pattern>\bwhere\b</pattern>
+		<response>I'm sorry, I don't know where that is</response>
+	</lo>
+	<lo>
+		<pattern>\bwho\b</pattern>
+		<response>I'm sorry, I don't know who that is</response>
+	</lo>
+	<lo>
+		<pattern>\bwhat\b</pattern>
+		<response>I'm sorry, I don't know what that is either</response>
+	</lo>
+	<lo>
+		<pattern>\bwhen\b</pattern>
+		<response>I'm sorry, I don't know when that is</response>
+	</lo>
+	<lo>
+		<pattern>\bwhy\b</pattern>
+		<response>I don't know why</response>
+	</lo>
+</low_priority>

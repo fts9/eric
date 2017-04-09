@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<network>
+	<node is_start_node="0">
+		<node_id>greet-2</node_id>
+		<response>Have you come far to get here today?</response>
+		<activation>0.5</activation>
+		<pattern weight="0">.*</pattern>
+		<neighbours>greet-2-1,greet-2-2</neighbours>
+		<enhancements>greet-2-1,greet-2-2</enhancements>
+		<inhibitions></inhibitions>
+	</node>
+	<node is_start_node="0">
+		<node_id>greet-2-1</node_id>
+		<response>Oh wow, where have you come from?</response>
+		<activation>0.0</activation>
+		<pattern weight="3">\by(e(s|ah)|up)|mhmm\b</pattern>
+		<neighbours>greet-2-1-1</neighbours>
+		<enhancements>greet-2-1-1</enhancements>
+		<inhibitions>greet-2-2</inhibitions>
+	</node>
+	<node is_start_node="0">
+		<node_id>greet-2-2</node_id>
+		<response>Where have you come from?</response>
+		<activation>0.0</activation>
+		<pattern weight="4">\bno(ne|pe|t)\b</pattern>
+		<neighbours>greet-2-2-1</neighbours>
+		<enhancements>greet-2-2-1</enhancements>
+		<inhibitions>greet-2-1</inhibitions>
+	</node>
+	<node is_start_node="0">
+		<node_id>greet-2-1-1</node_id>
+		<response>Oh wow, that is far. How are you finding Keele so far?</response>
+		<activation>0.5</activation>
+		<pattern weight="1">.*</pattern>
+		<neighbours>greet-3,greet-4</neighbours>
+		<enhancements>greet-3,greet-4</enhancements>
+		<inhibitions></inhibitions>
+	</node>
+	<node is_start_node="0">
+		<node_id>greet-2-2-1</node_id>
+		<response>Ah, that isn't too far away then. How are you finding Keele so far?</response>
+		<activation>0.5</activation>
+		<pattern weight="1">.*</pattern>
+		<neighbours>greet-3,greet-4</neighbours>
+		<enhancements>greet-3,greet-4</enhancements>
+		<inhibitions></inhibitions>
+	</node>
+	<node is_start_node="0">
+		<node_id>greet-3</node_id>
+		<response>Awesome, I'm really glad to hear that. You can ask me about all of the courses that the School of Computing offer. I can also point you to places on campus if you need me to</response>
+		<activation>0.0</activation>
+		<pattern weight="2">\by(e(s|ah)|up)|mhmm\b</pattern>
+		<pattern weight="3">\bg(ood|reat)\b</pattern>
+		<pattern weight="3">\bawesome\b</pattern>
+		<pattern weight="3">\bbrilliant\b</pattern>
+		<neighbours></neighbours>
+		<enhancements></enhancements>
+		<inhibitions></inhibitions>
+	</node>
+	<node is_start_node="0">
+		<node_id>greet-4</node_id>
+		<response>Oh I'm sad to hear that. If you need any help on finding a course in the School of Computing or need any help finding anything on campus you can ask me</response>
+		<activation>0.0</activation>
+		<pattern weight="2">\bno(ne|pe|t)\b</pattern>
+		<pattern weight="3">\bbad\b</pattern>
+		<pattern weight="3">\bawful\b</pattern>
+		<pattern weight="3">\bnot\b</pattern>
+		<neighbours></neighbours>
+		<enhancements></enhancements>
+		<inhibitions></inhibitions>
+	</node>
+</network>
