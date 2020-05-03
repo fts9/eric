@@ -1,22 +1,23 @@
 package uk.coles.ed.eric.model.activation_network;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.xml.sax.SAXException;
-
-import uk.coles.ed.eric.app.Logger;
-import uk.coles.ed.eric.model.ChatterBot;
-import uk.coles.ed.eric.utils.XmlReader;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+import uk.coles.ed.eric.model.ChatBot;
+import uk.coles.ed.eric.model.session.AnnActivation;
+import uk.coles.ed.eric.utils.NlpUtilities;
+import uk.coles.ed.eric.utils.XmlReader;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Defines a network of Activation Nodes which manages the state of the current conversation
@@ -25,11 +26,13 @@ import org.w3c.dom.NodeList;
  */
 public class ActivationNetwork {
 	//Define dummy node as a place holder to avoid a NullReferenceException when the active node is unavailable
-	public static final ActivationNetworkNode DUMMY_NODE = new ActivationNetworkNode("dummyNode", 0.0f, new PatternList[]{ new PatternList(0, new String[]{ ChatterBot.COMMAND_PREFIX + "dummyNode" }) }, "This is a dummy node.", new String[] { "dummyNode" }, new String[] { "dummyNode" }, new String[] { "dummyNode" }, false, -1);
+	public final ActivationNetworkNode DUMMY_NODE = new ActivationNetworkNode("dummyNode", new PatternList[]{ new PatternList(0, new String[]{ ChatBot.COMMAND_PREFIX + "dummyNode" }) }, "This is a dummy node.", new String[] { "dummyNode" }, new String[] { "dummyNode" }, new String[] { "dummyNode" }, false, -1);
 	
-	private static ArrayList<ActivationNetworkNode> network = new ArrayList<ActivationNetworkNode>(); //Array list to hold network nodes
+	private ArrayList<ActivationNetworkNode> network = new ArrayList<ActivationNetworkNode>(); //Array list to hold network nodes
 	private ActivationNetworkNode activeNode; //A place holder for the current active node
-	private Logger logger = Logger.getInstance(); //Grab an instance of the logger
+	private Logger log = LoggerFactory.getLogger(ActivationNetwork.class); //Grab an instance of the logger
+
+	private NlpUtilities nlpUtilities = new NlpUtilities();
 	
 	/**
 	 * Initialises the activation network reading XML configuration information from path provided
@@ -40,7 +43,7 @@ public class ActivationNetwork {
 			XmlReader nodesInput = new XmlReader(pathToConfig); //Load ActivationNetwork configuration XML
 			NodeList nList = nodesInput.getDocument().getElementsByTagName("node"); //Get network node tags from the XML document
 			
-			log("Creating activation network nodes...");
+			log.info("Creating activation network nodes...");
 			for(int i = 0; i < nList.getLength(); i++) { //Go through each 'node' XML tag and create ActivationNetworkNode objects from them
 				Node nNode = nList.item(i); //Get the 'node' tag 'i'
 				
@@ -85,11 +88,11 @@ public class ActivationNetwork {
 					neighbours = eElement.getElementsByTagName("neighbours").item(0).getTextContent();
 					
 					//Add a new ActivationNetworkNode to the ActivationNetwork based upon the properties extracted from the XML
-					network.add(new ActivationNetworkNode(nodeId, activation, patterns.toArray(new PatternList[patterns.size()]), response, XmlReader.parseList(neighbours), XmlReader.parseList(enhancements), XmlReader.parseList(inhibitions), isStartNode, maxUses));
+					network.add(new ActivationNetworkNode(nodeId, patterns.toArray(new PatternList[patterns.size()]), response, XmlReader.parseList(neighbours), XmlReader.parseList(enhancements), XmlReader.parseList(inhibitions), isStartNode, maxUses));
 				}
 			}
 			
-			log(String.valueOf(network.size()) + " nodes loaded!"); //Report the number of successfully loaded network nodes
+			log.info(String.valueOf(network.size()) + " nodes loaded!"); //Report the number of successfully loaded network nodes
 		} catch (ParserConfigurationException ex) {
 			ex.printStackTrace();
 		} catch (SAXException ex) {
@@ -125,7 +128,7 @@ public class ActivationNetwork {
 	 * @param 		input		The user's input
 	 * @return					True if a match was found based on the input provided amongst the active node's neighbours. False if not or if the active node is not currently initialised
 	 */
-	public boolean process(String input) {
+	public boolean process(Map<String, AnnActivation> anState, String input) {
 		if(activeNode == null || activeNode.equals(DUMMY_NODE)) return false; //Automatically return false if there is no active node
 		
 		ActivationNetworkNode topActive = null; //Create placeholder while the new 'activeNode' value is determined
@@ -133,18 +136,30 @@ public class ActivationNetwork {
 		
 		String[] neighbours = activeNode.getNeighbours(); //Get the neighbours of the 'activeNode'
 		
-		for(String ann : neighbours) if(getNodeById(ann).preActivate(input)) matchFound = true; //Preactivate neighbour nodes based upon the user input. Flag if the preActivate function returns true, indicating a successful match between user input and the node's patterns
+		for(String ann : neighbours) {
+			if(getNodeById(ann).preActivate(anState.get(ann), input)) {
+				matchFound = true; //Preactivate neighbour nodes based upon the user input. Flag if the preActivate function returns true, indicating a successful match between user input and the node's patterns
+			}
+		}
 		
 		//Run through the neighbour nodes now they've been preactivated
 		for(String ann : neighbours) {
 			if(topActive != null) { //If there's already an 'activeNode' candidate...
 				//...then compare their activation values. If the current node's activation is greater than the current 'topActive's activation, then replace the 'topActive' with the current one...
-				if(getNodeById(ann).getActivation() > topActive.getActivation()) topActive = getNodeById(ann);
-			} else topActive = getNodeById(ann); //...If there isn't a candidate in the placeholder however, put one there
+				if(anState.get(ann).getActivation() > anState.get(topActive.getNodeId()).getActivation()) {
+					topActive = getNodeById(ann);
+				}
+			} else {
+				topActive = getNodeById(ann); //...If there isn't a candidate in the placeholder however, put one there
+			}
 		}
 		
-		if(topActive != null && matchFound) activeNode = topActive.activate(); //If there's a topActive candidate AND a match found, then update and activate the 'activeNode'
-		if(topActive == null) activeNode = DUMMY_NODE; //Otherwise, if the 'topActive' candidate remains null replace the 'activeNode' with the 'DUMMY_NODE'
+		if(topActive != null && matchFound) {
+			activeNode = topActive.activate(anState); //If there's a topActive candidate AND a match found, then update and activate the 'activeNode'
+		}
+		if(topActive == null) {
+			activeNode = DUMMY_NODE; //Otherwise, if the 'topActive' candidate remains null replace the 'activeNode' with the 'DUMMY_NODE'
+		}
 		
 		return matchFound; //Return whether or not there was a successful match
 	}
@@ -162,12 +177,10 @@ public class ActivationNetwork {
 		ArrayList<String> sanitisedSearchTerms = new ArrayList<String>();
 		
 		//Process and remove any search terms which match the 'STOP_WORDS' provided by ChatterBot
-		for(int i = 0; i < searchTerms.length; i++) {
-			boolean matchFound = false;
-			
-			for(int x = 0; x < ChatterBot.STOP_WORDS.length; x++) if(ChatterBot.STOP_WORDS[x].equals(searchTerms[i])) matchFound = true;
-			
-			if(!matchFound) sanitisedSearchTerms.add(searchTerms[i]); //If the search term at 'i' was not a 'STOP_WORD', then include this in the list of sanitised search terms
+		for(String word : searchTerms) {
+			if(nlpUtilities.isStopWord(word)) {
+				sanitisedSearchTerms.add(word); //If the search term at 'i' was not a 'STOP_WORD', then include this in the list of sanitised search terms
+			}
 		}
 		searchTerms = sanitisedSearchTerms.toArray(new String[sanitisedSearchTerms.size()]); //Convert the sanitised search terms to a regular array
 		
@@ -177,8 +190,9 @@ public class ActivationNetwork {
 		for(int i = 0; i < searchTerms.length; i++) needles[i] = Pattern.compile(searchTerms[i]); //Convert the 'searchTerms' into matchable regex expressions
 		
 		int matchFrequency[] = new int[network.size()]; //Create an integer array to store the match frequencies of each needle against the nodes in the ActivationNetwork
-		
+
 		//Attempt to match each search term against node responses in the ActivationNetwork
+		//	TODO Review this algorithm for finding candidate ANN
 		for(Pattern term : needles) {
 			for(int i = 0; i < network.size(); i++) {
 				Matcher hayStack = term.matcher(network.get(i).getResponse());
@@ -211,23 +225,23 @@ public class ActivationNetwork {
 		
 		if( newActiveNode != null) { //If successful...
 			activeNode = newActiveNode; //...update the 'activeNode' to the new node and return true
-			log("Active node set to " + nodeId);
+			log.debug("Active node set to " + nodeId);
 			return true;
 		} else { //Otherwise return false
-			log("Failed to set active node to " + nodeId);
+			log.error("Failed to set active node to " + nodeId);
 			return false;
 		}
 	}
 	
 	/**
 	 * Retrieves an ActivationNetworkNode object by looking-up its ID
-	 * @param 		name		ID of the network node to retrieve
+	 * @param 		nodeId		ID of the network node to retrieve
 	 * @return					The activation network node requested. On failure, the dummy network node will be returned
 	 */
-	public static ActivationNetworkNode getNodeById(String name) {
-		for(ActivationNetworkNode ann : network) if(ann.getNodeId().equals(name)) return ann; //Search the network and return the node if it exists
+	public ActivationNetworkNode getNodeById(String nodeId) {
+		for(ActivationNetworkNode ann : network) if(ann.getNodeId().equals(nodeId)) return ann; //Search the network and return the node if it exists
 		
-		sLog("NodeById request failed for " + name);
+		log.error("Could not find a node with the ID: " + nodeId);
 		return DUMMY_NODE; //Otherwise, return the 'DUMMY_NODE'
 	}
 	
@@ -236,7 +250,7 @@ public class ActivationNetwork {
 	 * @param 		nodeId		The node ID to look-up
 	 * @param 		newNode		The new value of the node
 	 */
-	public static void setNodeById(String nodeId, ActivationNetworkNode newNode) {
+	public void setNodeById(String nodeId, ActivationNetworkNode newNode) {
 		if(getNodeById(nodeId) != null) {
 			for(int i = 0; i < network.size(); i++) {
 				if(network.get(i).getNodeId().equals(nodeId)) network.set(i, newNode);
@@ -251,9 +265,9 @@ public class ActivationNetwork {
 	/**
 	 * Checks to see if the 'activeNode' has any neighbours. If not, it forces the network to find a new conversation
 	 */
-	public void update() {
+	public void update(Map<String, AnnActivation> anState) {
 		if(activeNode.getNeighbours().length < 1) {
-			ChatterBot.sendOutput(getNewConversation());
+			ChatBot.sendOutput(getNewConversation(anState));
 		}
 	}
 	
@@ -261,13 +275,17 @@ public class ActivationNetwork {
 	 * Randomly selects a new start of conversation node, sets it as the active node, and then returns the new active node's response text
 	 * @return		The response for the start of the new conversation
 	 */
-	public String getNewConversation() {
+	public String getNewConversation(Map<String, AnnActivation> anState) {
 		ArrayList<ActivationNetworkNode> starters = new ArrayList<ActivationNetworkNode>();
 		
-		for(ActivationNetworkNode ann : network) if(ann.isStartingNode() && !ann.isMaxedOut()) starters.add(ann);
+		for(ActivationNetworkNode ann : network) {
+			if(ann.isStartingNode() && !ann.isMaxedOut(anState.get(ann.getNodeId()))) {
+				starters.add(ann);
+			}
+		}
 		
 		if(starters.size() < 1) {
-			log("ERIC is out of usable ActivationNetworkNodes! ERIC whited out!");
+			log.error("ERIC is out of usable ActivationNetworkNodes! ERIC whited out!");
 			activeNode = DUMMY_NODE;	//TODO Not really good enough response to being out of conversations
 			return null;
 		} else {
@@ -277,22 +295,5 @@ public class ActivationNetwork {
 			
 			return activeNode.getResponse();
 		}
-	}
-	
-	/**
-	 * Wrapper method for the log output method
-	 * @param 	output		Output to log, if logging is enabled
-	 */
-	private void log(String output) {
-		if(logger != null) logger.log(output);
-	}
-	
-	/**
-	 * A special logger
-	 * @param		 output		Text to log out
-	 */
-	private static void sLog(String output) {
-		Logger sLogger = Logger.getInstance();
-		sLogger.log(output);
 	}
 }

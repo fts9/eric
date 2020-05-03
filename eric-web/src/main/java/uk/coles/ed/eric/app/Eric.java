@@ -1,39 +1,22 @@
 package uk.coles.ed.eric.app;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.HierarchyBoundsListener;
-import java.awt.event.HierarchyEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextPane;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-
-import uk.coles.ed.eric.model.ChatterBot;
+import com.google.gson.Gson;
+import uk.coles.ed.eric.model.ChatBot;
 import uk.coles.ed.eric.model.ChatterBotOutputListener;
 import uk.coles.ed.eric.model.activation_network.ActivationNetwork;
 import uk.coles.ed.eric.model.activation_network.ActivationNetworkNode;
 import uk.coles.ed.eric.model.activation_network.PatternList;
+import uk.coles.ed.eric.utils.Logger;
+
+import javax.swing.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.ArrayList;
 
 /**
  * Bootstrapping class for the Chatterbot when running locally
@@ -79,10 +62,16 @@ public class Eric {
 	{'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'},
 	{'\\', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '\\'}, { ' ', '>' }};
 	private static JTextArea input = new JTextArea();
-	private static ChatterBot ericCb;
+	private static ChatBot ericCb;
 	
 	private static StyledDocument doc;
 	private static Style cpuStyle, userStyle;
+
+	public static void main(String[] args) {
+		ActivationNetwork activationNetwork = new ActivationNetwork("eric-web/src/main/resources/nodes.xml");
+		Gson gson = new Gson();
+		System.out.println(gson.toJson(activationNetwork.getNodes()));
+	}
 	
 	/**
 	 * Initialises and starts the Chatterbot software
@@ -91,7 +80,7 @@ public class Eric {
 	 */
 	public static void init(String[] args) {
 		boolean editorMode = false;		// Determines whether or not the program should boot into network editing mode, or chatterbot mode
-		
+
 		if(args.length > 0) {
 			for(String arg : args) {
 				if(arg.equals("-v") || arg.equals("--verbose")){
@@ -119,7 +108,7 @@ public class Eric {
 			xmlEditor();
 		}
 		
-		ericCb = new ChatterBot("");	// Create a new chatterbot instance
+		ericCb = new ChatBot();	// Create a new chatterbot instance
 		messageListener = new OutputListener();		// Create a new chatterbot output listener and register it as an output listener
 		ericCb.addChatterBotOutputListener(messageListener);
 		
@@ -136,7 +125,7 @@ public class Eric {
 			System.out.print(USER_PROMPT + " ");	// Output a prompt for user input
 			try {
 				String input = br.readLine();
-				ericCb.process(input);
+//				ericCb.process(input);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -282,7 +271,7 @@ public class Eric {
 			} catch (BadLocationException e) {
 				e.printStackTrace();
 			}
-			ericCb.process(input.getText().trim());	// Send the user's input to the back-end
+//			ericCb.process(input.getText().trim());	// Send the user's input to the back-end
 			input.setText("");	// Reset the user's input text box to empty
 			input.requestFocus();	// Refocus UI on input text box
 			changeShiftValue(true);	// Default shift to on for new input
@@ -425,8 +414,8 @@ public class Eric {
 								out.newLine();
 								out.write(getTabs(level) + "<response>" + ann2.getResponse() + "</response>");
 								out.newLine();
-								out.write(getTabs(level) + "<activation>" + ann2.getActivation() + "</activation>");
-								out.newLine();
+								/*out.write(getTabs(level) + "<activation>" + ann2.getActivation() + "</activation>");
+								out.newLine();*/
 								
 								PatternList[] patterns = ann2.getPatternList();
 								
@@ -495,7 +484,7 @@ public class Eric {
 			nodeId = br.readLine();
 			if(base != null && nodeId.equals("")) { nodeId =  base.getNodeId(); }
 			
-			System.out.print("Activation (Float) > ");
+			/*System.out.print("Activation (Float) > ");
 			try{
 				String buffer = br.readLine();
 				if(!buffer.equals("")) {
@@ -503,7 +492,7 @@ public class Eric {
 				} else {
 					if(base != null) activation = base.getActivation();
 				}
-			} catch(NumberFormatException ex) { activation = 0.0f; }
+			} catch(NumberFormatException ex) { activation = 0.0f; }*/
 			
 			rawPatterns = arrayInput("Pattern (int weight:String regex) > ");
 			for(String pattern : rawPatterns) {
@@ -543,7 +532,7 @@ public class Eric {
 				if(base != null) maxUses = base.getMaxUses();
 			}
 			
-			return new ActivationNetworkNode(nodeId, activation, resolvedPatterns.toArray(new PatternList[resolvedPatterns.size()]), response, neighbours, enhancements, inhibitions, isStartingNode, maxUses);
+			return new ActivationNetworkNode(nodeId, resolvedPatterns.toArray(new PatternList[resolvedPatterns.size()]), response, neighbours, enhancements, inhibitions, isStartingNode, maxUses);
 		} catch(IOException ex) {
 			ex.printStackTrace();
 			return null;

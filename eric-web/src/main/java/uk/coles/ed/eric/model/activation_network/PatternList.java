@@ -1,9 +1,11 @@
 package uk.coles.ed.eric.model.activation_network;
 
+import uk.coles.ed.eric.data.service.ChatBotConfigurationDataService;
+import uk.coles.ed.eric.data.service.ChatBotConfigurationDataServiceImpl;
+import uk.coles.ed.eric.model.ChatBot;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import uk.coles.ed.eric.model.ChatterBot;
 
 /**
  * PatternList stores a list of regex values used to determine a node's activation or to filter responses for high and low priority responses
@@ -25,6 +27,8 @@ public class PatternList {
 	
 	private boolean maxedOut;
 
+	private ChatBotConfigurationDataService chatBotConfigurationDataService = new ChatBotConfigurationDataServiceImpl();
+
 	/**
 	 * Creates a new instance of the Pattern in its ActivationNetworkNode (ANN) pattern handling mode. This mode stores a list of regex patterns against along
 	 * with a weight value that, when user input matches the patterns, determines the change in the node's activation value when a match is found
@@ -38,9 +42,9 @@ public class PatternList {
 		patterns = new Pattern[newPatterns.length];
 		for(int i = 0; i < patterns.length; i++) {
 			//If the '*POS' wildcard has been employed, replace the wildcard with the positive response definition defined in ChatterBot
-			if(newPatterns[i].equals(ChatterBot.WILDCARD + "POS")) patterns[i] = Pattern.compile(ChatterBot.POSITIVE);
+			if(newPatterns[i].equals(ChatBot.WILDCARD + "POS")) patterns[i] = Pattern.compile(chatBotConfigurationDataService.getPositiveResponseRegex());
 			//If the '*NEG' wildcard has been employed, replace the wildcard with the negative response definition defined in ChatterBot
-			else if(newPatterns[i].equals(ChatterBot.WILDCARD + "NEG")) patterns[i] = Pattern.compile(ChatterBot.NEGATIVE);
+			else if(newPatterns[i].equals(ChatBot.WILDCARD + "NEG")) patterns[i] = Pattern.compile(chatBotConfigurationDataService.getNegativeResponseRegex());
 			//Otherwise, compile the regex pattern
 			else patterns[i] = Pattern.compile(newPatterns[i]);
 		}
@@ -63,9 +67,9 @@ public class PatternList {
 		strict = isStrict;
 		for(int i = 0; i < patterns.length; i++) {
 			//If the '*POS' wildcard has been employed, replace the wildcard with the positive response definition defined in ChatterBot
-			if(newPatterns[i].equals(ChatterBot.WILDCARD + "POS")) { patterns[i] = Pattern.compile(ChatterBot.POSITIVE); }
+			if(newPatterns[i].equals(ChatBot.WILDCARD + "POS")) { patterns[i] = Pattern.compile(chatBotConfigurationDataService.getPositiveResponseRegex()); }
 			//If the '*NEG' wildcard has been employed, replace the wildcard with the negative response definition defined in ChatterBot
-			if(newPatterns[i].equals(ChatterBot.WILDCARD + "NEG")) { patterns[i] = Pattern.compile(ChatterBot.NEGATIVE); }
+			if(newPatterns[i].equals(ChatBot.WILDCARD + "NEG")) { patterns[i] = Pattern.compile(chatBotConfigurationDataService.getNegativeResponseRegex()); }
 			//Otherwise, compile the regex pattern
 			else { patterns[i] = Pattern.compile(newPatterns[i]); }
 		}
